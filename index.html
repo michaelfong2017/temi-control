@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Socket.IO chat</title>
+    <style>
+        body {
+            margin: 0;
+            padding-bottom: 3rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #form {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.25rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            height: 3rem;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+        }
+
+        #input {
+            border: none;
+            padding: 0 1rem;
+            flex-grow: 1;
+            border-radius: 2rem;
+            margin: 0.25rem;
+        }
+
+        #input:focus {
+            outline: none;
+        }
+
+        input[type=range] {
+            writing-mode: bt-lr;
+            /* IE */
+            -webkit-appearance: slider-vertical;
+            /* WebKit */
+            position: fixed;
+            right: 0;
+            top: 30px;
+            width: 50px;
+            height: 200px;
+            padding: 0 24px;
+            outline: none;
+            background: transparent;
+        }
+
+        #form>button {
+            background: #333;
+            border: none;
+            padding: 0 1rem;
+            margin: 0.25rem;
+            border-radius: 3px;
+            outline: none;
+            color: #fff;
+        }
+
+        #messages {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #messages>li {
+            padding: 0.5rem 1rem;
+        }
+
+        #messages>li:nth-child(odd) {
+            background: #efefef;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="dpad.css">
+    <style>
+        .o-pad {
+            position: fixed;
+            right: 100px;
+        }
+        #stop-button {
+            position: fixed;
+            right: 320px;
+            top: 50px;
+        }
+        #location-button {
+            position: fixed;
+            right: 335px;
+            top: 150px;
+        }
+        #follow-button {
+            position: fixed;
+            right: 400px;
+            top: 150px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="stop-button">
+        <i class="fa fa-hand-paper-o fa-4x" aria-hidden="true"></i>
+    </div>
+    <div id="location-button">
+        <i class="fa fa-map-marker fa-4x" aria-hidden="true"></i>
+    </div>
+    <div id="follow-button">
+        <i class="fa fa-blind fa-4x" aria-hidden="true"></i>
+    </div>
+    
+    <!-- <ul id="messages"></ul> -->
+
+    <!-- Temi movement -->
+    <div class="set dark">
+        <nav class="o-pad">
+            <a class="up" href="#"></a>
+            <a class="right" href="#"></a>
+            <a class="down" href="#"></a>
+            <a class="left" href="#"></a>
+        </nav>
+    </div>
+    <!-- Temi movement END -->
+
+    <input id="tilt" type="range">
+    <!-- <form id="form" action="">
+        <input id="input" autocomplete="off" /><button>Send</button>
+    </form> -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+
+        /*
+        var messages = document.getElementById('messages');
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('chat message', input.value);
+                input.value = '';
+            }
+        });
+
+        socket.on('chat message', function (msg) {
+            var item = document.createElement('li');
+            item.textContent = msg;
+            messages.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+        */
+
+        socket.on('tiltAngle', function (msg) {
+            console.log(msg)
+        });
+
+        socket.on('skidJoy', function (msg) {
+            console.log(msg)
+        });
+
+        /** Temi move */
+        /* document.body.addEventListener("click", function (e) {
+            if (e.target && e.target.nodeName == "A") {
+                e.preventDefault();
+            }
+        });
+        let dpads = Array.prototype.slice.call(document.getElementsByClassName('d-pad'), 0),
+            opads = Array.prototype.slice.call(document.getElementsByClassName('o-pad'), 0),
+            els = dpads.concat(opads);
+        function dir(dir) {
+            for (let i = 0; i < els.length; i++) {
+                const el = els[i],
+                    d = el.className.indexOf('d-') !== -1,
+                    what = d ? 'd-pad' : 'o-pad';
+                console.log(what);
+                el.className = what + ' ' + dir;
+            }
+        }
+        document.body.onkeyup = function (e) {
+            switch (e.which) {
+                case 37: dir('left'); break;
+                case 39: dir('right'); break;
+                case 38: dir('up'); break;
+                case 40: dir('down'); break;
+            }
+        }; */
+        const upButton = document.querySelector("body > div > nav > a.up");
+        const rightButton = document.querySelector("body > div > nav > a.right");
+        const downButton = document.querySelector("body > div > nav > a.down");
+        const leftButton = document.querySelector("body > div > nav > a.left");
+
+        var upInterval, rightInterval, downInterval, leftInterval;
+        var intervalSet = new Set();
+        upButton.addEventListener("mousedown", function () {
+            upInterval = setInterval(function () {
+                socket.emit('skidJoy', "{x:1,y:0,smart:true}");
+            }, 125)
+            intervalSet.add(upInterval);
+        });
+        upButton.addEventListener("mouseup", function () {
+            intervalSet.forEach(interval => {
+                clearInterval(interval);
+            })
+            intervalSet.clear();
+        });
+        rightButton.addEventListener("mousedown", function () {
+            rightInterval = setInterval(function () {
+                socket.emit('skidJoy', "{x:0,y:-1,smart:true}");
+            }, 125)
+            intervalSet.add(rightInterval);
+        });
+        rightButton.addEventListener("mouseup", function () {
+            intervalSet.forEach(interval => {
+                clearInterval(interval);
+            })
+            intervalSet.clear();
+        });
+        downButton.addEventListener("mousedown", function () {
+            downInterval = setInterval(function () {
+                socket.emit('skidJoy', "{x:-1,y:0,smart:true}");
+            }, 125)
+            intervalSet.add(downInterval);
+        });
+        downButton.addEventListener("mouseup", function () {
+            intervalSet.forEach(interval => {
+                clearInterval(interval);
+            })
+            intervalSet.clear();
+        });
+        leftButton.addEventListener("mousedown", function () {
+            leftInterval = setInterval(function () {
+                socket.emit('skidJoy', "{x:0,y:1,smart:true}");
+            }, 125)
+            intervalSet.add(leftInterval);
+        });
+        leftButton.addEventListener("mouseup", function () {
+            intervalSet.forEach(interval => {
+                clearInterval(interval);
+            })
+            intervalSet.clear();
+        });
+        /** Temi move END */
+
+
+        /** Temi tilt head */
+        var slider = document.getElementById("tilt");
+        slider.oninput = function () {
+            // map 0 to -25, 100 to 55
+            const tiltAngle = slider.value * 4 / 5 - 25;
+
+            socket.emit("tiltAngle", String(tiltAngle));
+        }
+        /** Temi tilt head END */
+
+        /** Stop, GoToLocation, Follow */
+        document.querySelector("#stop-button").addEventListener("click", function() {
+            socket.emit('stopMovement', "stopMovement");
+        });
+
+        document.querySelector("#location-button").addEventListener("click", function() {
+            socket.emit('goToLocation', "home base");
+        });
+
+        document.querySelector("#follow-button").addEventListener("click", function() {
+            socket.emit('followMe', "followMe");
+        });
+        /** Stop, GoToLocation, Follow END */
+
+    </script>
+</body>
+
+</html>
